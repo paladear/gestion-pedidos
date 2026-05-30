@@ -666,6 +666,7 @@ td{padding:9px 12px;vertical-align:middle}
       <div class="page-hdr-actions">
         <button class="btn btn-s" onclick="openImportDB()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 12l-4-4m0 0l-4 4m4-4v12"/></svg>Importar Excel</button>
         <button class="btn btn-d" onclick="confirmClearProductsDB()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E1515" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6"/></svg>Vaciar base</button>
+            <button class="btn btn-s" onclick="unirDuplicados()" title="Unir productos duplicados">🔗 Unir duplicados</button>
         <button class="btn btn-p" onclick="openModal('m-prod',()=>resetProdForm(null))"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>Nuevo producto</button>
       </div>
     </div>
@@ -1500,6 +1501,37 @@ function confirmClearProductsDB() {
     save(); renderDB(); renderProvList(); if(currentProvId) renderDetail();
     showToast("🗑️ Base de productos vaciada");
   });
+}
+
+// Une productos duplicados (mismo nombre). Conserva el que tiene articuloId
+// y reasigna las referencias de los proveedores al conservado, para NO perder
+// las listas ya cargadas. Luego elimina los duplicados.
+function unirDuplicados() {
+  const norm = s => String(s||"").trim().toLowerCase().replace(/\s+/g," ");
+  const grupos = new Map();
+  DB.productos.forEach(p => {
+    const k = norm(p.nombre);
+    if(!grupos.has(k)) grupos.set(k, []);
+    grupos.get(k).push(p);
+  });
+  let unidos = 0;
+  grupos.forEach(grupo => {
+    if(grupo.length < 2) return;
+    const canon = grupo.find(p => String(p.articuloId||"").trim()) || grupo[0];
+    grupo.filter(p => p.id !== canon.id).forEach(dup => {
+      DB.proveedores.forEach(pv => {
+        const idxDup = (pv.productos||[]).findIndex(x => x.productoId === dup.id);
+        if(idxDup < 0) return;
+        if(pv.productos.some(x => x.productoId === canon.id)) pv.productos.splice(idxDup, 1);
+        else pv.productos[idxDup].productoId = canon.id;
+      });
+      DB.productos = DB.productos.filter(p => p.id !== dup.id);
+      unidos++;
+    });
+  });
+  if(unidos === 0){ showToast("✅ No hay duplicados para unir"); return; }
+  save(); renderDB(); renderProvList(); if(currentProvId) renderDetail();
+  showToast(`🔗 ${unidos} duplicado${unidos>1?"s unidos":" unido"} — listas conservadas`);
 }
 
 function recalcAllOrders() {
