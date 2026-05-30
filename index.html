@@ -2036,6 +2036,7 @@ function showImpErr(msg) {
 }
 
 function findCol(hdr,...opts) { for(const o of opts){const i=hdr.findIndex(h=>String(h).toLowerCase().includes(o));if(i>=0)return i;} return -1; }
+function parseNum(v){ if(v===undefined||v===null||String(v).trim()==="")return NaN; const s=String(v).trim().replace(/\s/g,""); if(/^-?\d{1,3}(\.\d{3})*(,\d+)?$/.test(s)) return Number(s.replace(/\./g,"").replace(",",".")); if(/^-?\d+(,\d+)?$/.test(s)) return Number(s.replace(",",".")); return Number(s); }
 
 function processFile(file) {
   const reader=new FileReader();
@@ -2044,8 +2045,9 @@ function processFile(file) {
     try {
       let rows;
       if(file.name.toLowerCase().endsWith(".csv")){
-        const text=e.target.result,sep=text.includes(";")?";":",";
-        rows=text.trim().split("\n").map(l=>l.split(sep).map(c=>c.replace(/^"|"$/g,"").trim()));
+        let text; try{text=new TextDecoder("utf-8",{fatal:true}).decode(e.target.result);}catch(e){text=new TextDecoder("windows-1252").decode(e.target.result);}
+        const sep=text.includes(";")?";":",";
+        rows=text.trim().split(/\r?\n/).map(l=>l.split(sep).map(c=>c.replace(/^"|"$/g,"").trim()));
       } else {
         const wb=XLSX.read(e.target.result,{type:"binary"});
         const ws=wb.Sheets[wb.SheetNames[0]];
@@ -2063,14 +2065,14 @@ function processFile(file) {
         articuloId:ai>=0&&r[ai]?String(r[ai]).trim():"",
         nombre:String(r[ci]).trim(),
         rubroNombre:ri>=0&&r[ri]?String(r[ri]).trim():"",
-        stock:si>=0&&!isNaN(Number(r[si]))?Math.max(0,Number(r[si])):0,
+        stock:si>=0&&!isNaN(parseNum(r[si]))?Math.max(0,parseNum(r[si])):0,
       }));
       if(!items.length) return showImpErr("Sin datos válidos");
       importPreview=items;
       renderImportPreview();
     } catch(err){ showImpErr("Error al procesar: "+err.message); }
   };
-  if(file.name.toLowerCase().endsWith(".csv")) reader.readAsText(file,"UTF-8");
+  if(file.name.toLowerCase().endsWith(".csv")) reader.readAsArrayBuffer(file);
   else reader.readAsBinaryString(file);
 }
 
