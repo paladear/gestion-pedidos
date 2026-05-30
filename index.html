@@ -2045,7 +2045,7 @@ function processFile(file) {
     try {
       let rows;
       if(file.name.toLowerCase().endsWith(".csv")){
-        let text; try{text=new TextDecoder("utf-8",{fatal:true}).decode(e.target.result);}catch(e){text=new TextDecoder("windows-1252").decode(e.target.result);}
+        let text; try{text=new TextDecoder("utf-8",{fatal:true}).decode(e.target.result);}catch(_err){text=new TextDecoder("windows-1252").decode(e.target.result);}
         const sep=text.includes(";")?";":",";
         rows=text.trim().split(/\r?\n/).map(l=>l.split(sep).map(c=>c.replace(/^"|"$/g,"").trim()));
       } else {
