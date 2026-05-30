@@ -337,7 +337,7 @@ td{padding:9px 12px;vertical-align:middle}
   thead{display:none}
   tr.prod-row{
     display:grid;
-    grid-template-columns:1fr 58px 58px 36px;
+    grid-template-columns:1fr 50px 50px 32px;
     grid-template-rows:auto;
     background:var(--surface);border-radius:10px;margin-bottom:3px;
     border-left:3px solid var(--border);
@@ -379,7 +379,7 @@ td{padding:9px 12px;vertical-align:middle}
   }
   td.td-stock::before{content:"STOCK";font-size:7px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-s);margin-bottom:2px}
   td.td-stock .tbl-inp{
-    width:50px;font-size:13px;font-weight:800;padding:3px 2px;
+    width:44px;font-size:13px;font-weight:800;padding:3px 2px;
     border-radius:6px;text-align:center;
     border:1.5px solid var(--border);background:var(--bg);
     color:var(--text);outline:none;
@@ -392,7 +392,7 @@ td{padding:9px 12px;vertical-align:middle}
   }
   td.td-apedir::before{content:"PEDIR";font-size:7px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--sidebar);margin-bottom:2px}
   td.td-apedir .tbl-inp{
-    width:50px;font-size:15px;font-weight:800;padding:3px 2px;
+    width:44px;font-size:15px;font-weight:800;padding:3px 2px;
     border-radius:6px;text-align:center;
     border:2px solid rgba(84,118,146,.35);
     background:transparent;color:var(--sidebar);outline:none;
@@ -1431,7 +1431,7 @@ function renderDetail() {
     const rowCls = urg ? (urgRowClass[urg]||"") : "";
     const minSrc = pp.minimoManual>0?"✏️ manual":p.minimoManual>0?"prod.":rub?rub.nombre.slice(0,10):"def.";
     return `<tr class="prod-row ${rowCls}">
-      <td class="td-name" title="${esc(p.nombre)}"><span class="td-name-inner">${esc(p.nombre)}</span><span class="td-rub-inline" style="display:block;font-size:11px;color:#6B7280;font-weight:600;margin-top:1px">${esc(rub?.nombre||"")}</span></td>
+      <td class="td-name" title="${esc(p.nombre)}"><span class="td-name-inner">${esc(middleTrunc(p.nombre,22,6))}</span></td>
       <td class="td-stock"><input type="number" class="tbl-inp stk-inp-tbl" value="${pp.stock}" min="0" step="any" onchange="updateStock('${pp.productoId}',this.value)" title="Stock actual"></td>
       <td class="td-min-val">${min}<span class="min-src" title="${minSrc}">${minSrc}</span></td>
       <td class="td-min-val">${bulto>1?bulto:"—"}<span class="min-src">bulto</span></td>
@@ -2308,10 +2308,24 @@ function renderAlertas() {
 showLoading();
 </script>
 <script>
+// Truncado inteligente: muestra inicio + … + últimos 6 chars
+function middleTrunc(str, head, tail) {
+  if (str.length <= head + tail + 1) return str;
+  return str.slice(0, head) + '…' + str.slice(-tail);
+}
+
 // Tap-to-expand nombre en mobile
 document.addEventListener('click', function(e) {
   var inner = e.target.closest('.td-name-inner');
-  if (inner) { inner.classList.toggle('expanded'); }
+  if (!inner) return;
+  var fullName = (inner.closest('td') || {}).getAttribute && inner.closest('td').getAttribute('title') || inner.textContent;
+  if (inner.classList.contains('expanded')) {
+    inner.classList.remove('expanded');
+    inner.textContent = middleTrunc(fullName, 22, 6);
+  } else {
+    inner.classList.add('expanded');
+    inner.textContent = fullName;
+  }
 });
 </script>
 </body>
