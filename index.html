@@ -351,23 +351,30 @@ td{padding:9px 12px;vertical-align:middle}
     font-size:11px;font-weight:700;color:var(--text);
     padding:0 6px 0 10px;
     display:flex;align-items:center;
-    min-height:44px;overflow:hidden;min-width:0;
+    min-height:44px;overflow:hidden;min-width:0;width:100%;
   }
   .td-rub-inline{display:none!important}
   td.td-rub{display:none}
-  /* Nombre: 1 línea truncada, toque para expandir */
+  /* Nombre: cabecera truncable + cola fija (últimos 6 chars siempre visibles) */
   .td-name-inner{
-    white-space:nowrap!important;
-    overflow:hidden!important;
-    text-overflow:ellipsis!important;
-    display:block!important;
+    display:flex!important;
+    align-items:baseline;
+    width:100%;min-width:0;overflow:hidden;
     cursor:pointer;
-    width:100%;min-width:0;
   }
+  .td-name-inner .nh{
+    flex:1 1 auto;min-width:0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .td-name-inner .nt{
+    flex:0 0 auto;white-space:nowrap;
+  }
+  /* Expandido: muestra nombre completo en varias líneas */
   .td-name-inner.expanded{
-    white-space:normal!important;
-    overflow:visible!important;
-    text-overflow:clip!important;
+    flex-wrap:wrap;overflow:visible;
+  }
+  .td-name-inner.expanded .nh{
+    white-space:normal;overflow:visible;text-overflow:clip;flex:0 1 auto;
   }
   /* Mínimo y bulto — ocultos */
   td.td-min-val{display:none!important}
@@ -375,7 +382,7 @@ td{padding:9px 12px;vertical-align:middle}
   td.td-stock{
     grid-column:2;grid-row:1;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    padding:5px 4px;border-left:1px solid var(--border-l);
+    padding:5px 4px;border-left:1px solid var(--border-l);width:100%;
   }
   td.td-stock::before{content:"STOCK";font-size:7px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-s);margin-bottom:2px}
   td.td-stock .tbl-inp{
@@ -388,7 +395,7 @@ td{padding:9px 12px;vertical-align:middle}
   td.td-apedir{
     grid-column:3;grid-row:1;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    padding:5px 4px;border-left:1px solid var(--border-l);
+    padding:5px 4px;border-left:1px solid var(--border-l);width:100%;
   }
   td.td-apedir::before{content:"PEDIR";font-size:7px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--sidebar);margin-bottom:2px}
   td.td-apedir .tbl-inp{
@@ -404,7 +411,7 @@ td{padding:9px 12px;vertical-align:middle}
     display:flex!important;flex-direction:column!important;
     align-items:center;justify-content:center;
     padding:4px;gap:3px;
-    border-left:1px solid var(--border-l);
+    border-left:1px solid var(--border-l);width:100%;
   }
   td.td-act .tbl-btn{
     padding:0;border-radius:7px;margin-right:0!important;
@@ -1431,7 +1438,7 @@ function renderDetail() {
     const rowCls = urg ? (urgRowClass[urg]||"") : "";
     const minSrc = pp.minimoManual>0?"✏️ manual":p.minimoManual>0?"prod.":rub?rub.nombre.slice(0,10):"def.";
     return `<tr class="prod-row ${rowCls}">
-      <td class="td-name" title="${esc(p.nombre)}"><span class="td-name-inner">${esc(middleTrunc(p.nombre,22,6))}</span></td>
+      <td class="td-name" title="${esc(p.nombre)}"><span class="td-name-inner">${nameSplit(p.nombre)}</span></td>
       <td class="td-stock"><input type="number" class="tbl-inp stk-inp-tbl" value="${pp.stock}" min="0" step="any" onchange="updateStock('${pp.productoId}',this.value)" title="Stock actual"></td>
       <td class="td-min-val">${min}<span class="min-src" title="${minSrc}">${minSrc}</span></td>
       <td class="td-min-val">${bulto>1?bulto:"—"}<span class="min-src">bulto</span></td>
@@ -2308,24 +2315,17 @@ function renderAlertas() {
 showLoading();
 </script>
 <script>
-// Truncado inteligente: muestra inicio + … + últimos 6 chars
-function middleTrunc(str, head, tail) {
-  if (str.length <= head + tail + 1) return str;
-  return str.slice(0, head) + '…' + str.slice(-tail);
+// Divide el nombre: cabecera (se trunca con …) + cola fija con últimos 6 chars (siempre visible)
+function nameSplit(name) {
+  name = name || '';
+  if (name.length <= 8) return '<span class="nh">' + esc(name) + '</span>';
+  return '<span class="nh">' + esc(name.slice(0, -6)) + '</span><span class="nt">' + esc(name.slice(-6)) + '</span>';
 }
 
 // Tap-to-expand nombre en mobile
 document.addEventListener('click', function(e) {
   var inner = e.target.closest('.td-name-inner');
-  if (!inner) return;
-  var fullName = (inner.closest('td') || {}).getAttribute && inner.closest('td').getAttribute('title') || inner.textContent;
-  if (inner.classList.contains('expanded')) {
-    inner.classList.remove('expanded');
-    inner.textContent = middleTrunc(fullName, 22, 6);
-  } else {
-    inner.classList.add('expanded');
-    inner.textContent = fullName;
-  }
+  if (inner) { inner.classList.toggle('expanded'); }
 });
 </script>
 </body>
