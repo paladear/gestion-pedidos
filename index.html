@@ -62,6 +62,10 @@ button,input,select,textarea{font-family:'Montserrat',sans-serif}
 .sync-dot{width:8px;height:8px;border-radius:50%;background:#6EC97A;flex-shrink:0;box-shadow:0 0 6px #6EC97A88}
 .sync-dot.off{background:#D46060;box-shadow:0 0 6px #D4606088}
 .topbar-sync{display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.6);font-weight:700}
+.topbar-tools{display:flex;align-items:center;gap:6px}
+.tb-tool{background:rgba(255,255,255,.14);border:none;border-radius:9px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;transition:background .15s,opacity .15s;flex-shrink:0}
+.tb-tool:hover{background:rgba(255,255,255,.26)}
+.tb-tool:disabled{opacity:.32;cursor:default;background:rgba(255,255,255,.08)}
 
 /* Sidebar */
 .sidebar{background:var(--sidebar-d);overflow-y:auto;display:flex;flex-direction:column;border-right:1px solid rgba(0,0,0,.15);transition:all .25s ease;overflow-x:visible}
@@ -532,6 +536,17 @@ td{padding:9px 12px;vertical-align:middle}
     Gestión de Pedidos
   </div>
   <span id="topbar-breadcrumb" class="topbar-title"></span>
+  <div class="topbar-tools">
+    <button id="btn-undo" class="tb-tool" onclick="undo()" title="Deshacer" disabled>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14L4 9l5-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M4 9h11a5 5 0 015 5v0a5 5 0 01-5 5H9"/></svg>
+    </button>
+    <button id="btn-redo" class="tb-tool" onclick="redo()" title="Rehacer" disabled>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 14l5-5-5-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M20 9H9a5 5 0 00-5 5v0a5 5 0 005 5h6"/></svg>
+    </button>
+    <button class="tb-tool" onclick="openBackups()" title="Backups">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-8H7v8M7 3v5h8"/></svg>
+    </button>
+  </div>
   <div class="topbar-sync">
     <div id="sync-dot" class="sync-dot"></div>
     <span id="sync-lbl">Conectado</span>
@@ -761,12 +776,12 @@ td{padding:9px 12px;vertical-align:middle}
 <!-- Editar mínimo en proveedor -->
 <div id="m-stk" class="ov" onclick="closeModal('m-stk')">
 <div class="modal" onclick="event.stopPropagation()">
-  <div class="m-hdr"><span id="m-stk-t" class="m-title">Editar mínimo</span><button class="m-close" onclick="closeModal('m-stk')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+  <div class="m-hdr"><span id="m-stk-t" class="m-title">Editar producto</span><button class="m-close" onclick="closeModal('m-stk')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
   <div class="m-body">
-    <div id="m-stk-name" style="font-weight:700;font-size:15px;color:#1E293B;margin-bottom:4px"></div>
     <div id="m-stk-sub" style="font-size:12px;color:#94A3B8;margin-bottom:16px"></div>
-    <div class="field"><label class="lbl">Mínimo manual para este proveedor</label><input id="f-stk-min" type="number" min="0" class="inp"><div id="f-stk-min-hint" class="hint"></div></div>
-    <div class="field"><label class="lbl">Bulto cerrado para este proveedor (opcional)</label><input id="f-stk-bulto" type="number" min="0" class="inp" placeholder="Dejar vacío = usar bulto del producto"><div id="f-stk-bulto-hint" class="hint"></div></div>
+    <div class="field"><label class="lbl">Nombre del producto</label><input id="f-stk-nombre" type="text" class="inp"><div class="hint">El cambio se aplica en toda la base de datos.</div></div>
+    <div class="field"><label class="lbl">Mínimo a pedir</label><input id="f-stk-min" type="number" min="0" class="inp"><div id="f-stk-min-hint" class="hint"></div></div>
+    <div class="field"><label class="lbl">Bulto cerrado (opcional)</label><input id="f-stk-bulto" type="number" min="0" class="inp" placeholder="Dejar vacío = sin bulto cerrado"><div id="f-stk-bulto-hint" class="hint"></div></div>
     <input type="hidden" id="f-stk-pid">
     <div class="btn-row"><button class="btn btn-s" onclick="closeModal('m-stk')">Cancelar</button><button class="btn btn-p" onclick="saveStkEdit()" style="flex:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Guardar</button></div>
   </div>
@@ -808,6 +823,24 @@ td{padding:9px 12px;vertical-align:middle}
   <div id="conf-t" style="font-weight:700;font-size:18px;margin-bottom:10px;color:#1E293B"></div>
   <div id="conf-m" style="font-size:14px;color:#64748B;margin-bottom:22px;line-height:1.6"></div>
   <div class="btn-row"><button class="btn btn-s" onclick="closeModal('m-conf')">Cancelar</button><button id="conf-ok" class="btn btn-d" style="flex:1">Eliminar</button></div>
+</div></div>
+
+<!-- Backups -->
+<div id="m-backup" class="ov" onclick="closeModal('m-backup')">
+<div class="modal" onclick="event.stopPropagation()">
+  <div class="m-hdr"><span class="m-title">Backups</span><button class="m-close" onclick="closeModal('m-backup')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+  <div class="m-body">
+    <div class="field">
+      <label class="lbl">Nombre del backup (opcional)</label>
+      <input id="f-backup-name" type="text" class="inp" placeholder="Ej: Antes de importar Excel">
+    </div>
+    <button class="btn btn-p" style="width:100%;margin-bottom:16px" onclick="saveBackupNow()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-8H7v8M7 3v5h8"/></svg>
+      Guardar backup ahora
+    </button>
+    <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Backups guardados</div>
+    <div id="backup-list"></div>
+  </div>
 </div></div>
 
 <input type="file" id="f-import" accept=".xlsx,.xls,.csv" style="display:none">
@@ -861,6 +894,7 @@ function normalizeDB() {
     if (p.bultoCerrado === undefined) p.bultoCerrado = 0;
     if (p.articuloId   === undefined) p.articuloId   = "";
     if (p.lastStock    === undefined) p.lastStock    = 0;
+    if (p.lockNombre   === undefined) p.lockNombre   = false;
     if (!p.rubroId) p.rubroId = "";
   });
 }
@@ -910,6 +944,7 @@ function getLocalBackup() {
 const save = () => {
   normalizeDB();  // asegurar arrays antes de guardar
   saveLocalBackup();  // backup local SIEMPRE
+  recordHistory();    // historial para deshacer/rehacer (se ignora durante undo/redo)
   const sid = Date.now()+"_"+Math.random().toString(36).slice(2,6);
   _mySaveId = sid;
   DB._sid = sid;
@@ -921,6 +956,158 @@ const save = () => {
     showToast("❌ Error al guardar en la nube. Los datos están guardados localmente.");
   });
 };
+
+// ══ DESHACER / REHACER (historial local en memoria, estilo Excel) ═════════════
+let _history  = [];     // snapshots de DB (sin _sid)
+let _histIdx  = -1;      // posición actual dentro del historial
+let _restoring = false;  // true mientras un undo/redo escribe en Firebase
+
+function _snapshotDB() { const c = JSON.parse(JSON.stringify(DB)); delete c._sid; return c; }
+
+function recordHistory() {
+  if (_restoring) return;  // no registrar los propios undo/redo
+  const snap = _snapshotDB();
+  if (_histIdx >= 0 && JSON.stringify(_history[_histIdx]) === JSON.stringify(snap)) return; // sin cambios
+  _history = _history.slice(0, _histIdx + 1);  // descartar el "futuro" si veníamos de un undo
+  _history.push(snap);
+  if (_history.length > 60) _history.shift();  // acotar memoria
+  _histIdx = _history.length - 1;
+  updateUndoRedoButtons();
+}
+
+function _applyHistory(idx, msg) {
+  _histIdx = idx;
+  _restoring = true;
+  DB = JSON.parse(JSON.stringify(_history[_histIdx]));
+  save();
+  _restoring = false;
+  renderCurrentView();
+  updateUndoRedoButtons();
+  showToast(msg);
+}
+
+function undo() { if (_histIdx > 0) _applyHistory(_histIdx - 1, "↶ Cambio deshecho"); }
+function redo() { if (_histIdx < _history.length - 1) _applyHistory(_histIdx + 1, "↷ Cambio rehecho"); }
+
+function updateUndoRedoButtons() {
+  const u = document.getElementById("btn-undo");
+  const r = document.getElementById("btn-redo");
+  if (u) u.disabled = _histIdx <= 0;
+  if (r) r.disabled = _histIdx >= _history.length - 1;
+}
+
+// ══ BACKUPS MANUALES (sincronizados vía Firebase, nodo aparte "backups") ══════
+const backupsRef = firebase.database().ref("backups");
+let _backups = [];
+
+backupsRef.on("value", snap => {
+  const val = snap.val() || {};
+  _backups = Object.keys(val).map(k => ({key:k, ...val[k]})).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  if (document.getElementById("m-backup")?.classList.contains("open")) renderBackupsList();
+});
+
+function openBackups() {
+  const nameInput = document.getElementById("f-backup-name");
+  if (nameInput) nameInput.value = "";
+  renderBackupsList();
+  openModal("m-backup");
+}
+
+function saveBackupNow() {
+  const name = (document.getElementById("f-backup-name")?.value || "").trim();
+  const entry = { name: name || "Backup", ts: Date.now(), data: _snapshotDB() };
+  const ref = backupsRef.push();
+  ref.set(entry)
+    .then(() => {
+      // Conservar solo los 30 más recientes
+      backupsRef.once("value").then(s => {
+        const all = s.val() || {};
+        const sorted = Object.keys(all).map(k=>({key:k,ts:all[k].ts||0})).sort((a,b)=>b.ts-a.ts);
+        sorted.slice(30).forEach(o => backupsRef.child(o.key).remove());
+      });
+      showToast("💾 Backup guardado");
+    })
+    .catch(() => showToast("❌ No se pudo guardar el backup"));
+  const nameInput = document.getElementById("f-backup-name");
+  if (nameInput) nameInput.value = "";
+}
+
+function restoreBackup(key) {
+  const b = _backups.find(x => x.key === key);
+  if (!b) return;
+  const when = new Date(b.ts).toLocaleString("es-AR");
+  showConfirm("Restaurar backup",
+    `Esto reemplaza <strong>todos los datos actuales</strong> por el backup "<strong>${esc(b.name)}</strong>" del ${esc(when)}.<br><br>Tus datos actuales quedan en el historial de Deshacer por si te arrepentís.`,
+    () => {
+      DB = JSON.parse(JSON.stringify(b.data));
+      normalizeDB();
+      save();
+      closeModal("m-backup");
+      renderCurrentView();
+      showToast("✅ Backup restaurado");
+    });
+  document.getElementById("conf-ok").textContent = "Restaurar";
+  document.getElementById("conf-ok").className = "btn btn-p";
+  document.getElementById("conf-ok").style.flex = "1";
+}
+
+function deleteBackup(key) {
+  const b = _backups.find(x => x.key === key);
+  if (!b) return;
+  showConfirm("Eliminar backup",
+    `¿Eliminar el backup "<strong>${esc(b.name)}</strong>"? Esto no afecta tus datos actuales.`,
+    () => { backupsRef.child(key).remove(); showToast("🗑️ Backup eliminado"); });
+  document.getElementById("conf-ok").textContent = "Eliminar";
+  document.getElementById("conf-ok").className = "btn btn-d";
+  document.getElementById("conf-ok").style.flex = "1";
+}
+
+// Construye la lista con nodos DOM (textContent para datos del usuario) para evitar XSS.
+function renderBackupsList() {
+  const el = document.getElementById("backup-list");
+  if (!el) return;
+  el.replaceChildren();
+  if (!_backups.length) {
+    const empty = document.createElement("div");
+    empty.style.cssText = "text-align:center;padding:24px 12px;color:#9CA3AF;font-size:13px";
+    empty.textContent = "Todavía no hay backups guardados.";
+    el.appendChild(empty);
+    return;
+  }
+  _backups.forEach(b => {
+    const when = new Date(b.ts).toLocaleString("es-AR", {day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"});
+    const np = Array.isArray(b.data?.proveedores) ? b.data.proveedores.length : 0;
+    const nd = Array.isArray(b.data?.productos) ? b.data.productos.length : 0;
+
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border-l,#E5E7EB);border-radius:12px;margin-bottom:8px";
+
+    const info = document.createElement("div");
+    info.style.cssText = "flex:1;min-width:0";
+    const nameEl = document.createElement("div");
+    nameEl.style.cssText = "font-weight:700;font-size:13px;color:#1E293B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
+    nameEl.textContent = b.name || "Backup";
+    const metaEl = document.createElement("div");
+    metaEl.style.cssText = "font-size:11px;color:#9CA3AF;margin-top:1px";
+    metaEl.textContent = `${when} · ${np} prov · ${nd} prod`;
+    info.append(nameEl, metaEl);
+
+    const restoreBtn = document.createElement("button");
+    restoreBtn.className = "btn btn-s";
+    restoreBtn.style.cssText = "padding:7px 12px;font-size:12px";
+    restoreBtn.textContent = "Restaurar";
+    restoreBtn.onclick = () => restoreBackup(b.key);
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "tbl-btn tbl-btn-d";
+    delBtn.title = "Eliminar";
+    delBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#991B1B" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6"/></svg>`;
+    delBtn.onclick = () => deleteBackup(b.key);
+
+    row.append(info, restoreBtn, delBtn);
+    el.appendChild(row);
+  });
+}
 
 // ── FLAG: operación local en curso ──────────────────────────────────────────
 let _localOpInProgress = false;  // true mientras save() no recibió el eco de Firebase
@@ -972,6 +1159,7 @@ fbRef.on("value", (snap) => {
   if (data._sid && data._sid === _mySaveId) {
     _localOpInProgress = false;
     DB = data; normalizeDB();
+    if (!_history.length) recordHistory(); // sembrar el estado inicial para deshacer
     if (!_fbLoaded) { _fbLoaded = true; hideLoading(); }
     renderCurrentView();   // siempre re-renderizar al confirmar guardado
     if (_remoteUpdatePending) { _remoteUpdatePending = false; }
@@ -994,6 +1182,7 @@ fbRef.on("value", (snap) => {
   }
   DB = data; normalizeDB();
   saveLocalBackup(); // siempre actualizar el backup cuando llegan datos de Firebase
+  if (!_history.length) recordHistory(); // sembrar el estado inicial para deshacer
   if (!_fbLoaded) { _fbLoaded = true; hideLoading(); renderCurrentView(); return; }
 
   const modalOpen  = document.querySelector(".ov.open, .conf-ov.open");
@@ -1046,8 +1235,15 @@ function renderCurrentView() {
   else {
     renderProvList();
     if (isMobile && isMobile()) {
+      // En mobile, mostrar la lista de proveedores apenas se abre la app
+      // (antes quedaba oculta hasta tocar el botón "Proveedores").
       const mobileProv = document.getElementById("mobile-prov-list-wrap");
-      if (mobileProv && mobileProv.style.display !== "none") renderMobileProvList();
+      if (mobileProv) mobileProv.style.display = "block";
+      const desktopMsg = document.querySelector("#page-welcome .desktop-only");
+      if (desktopMsg) desktopMsg.style.display = "none";
+      const navBtn = document.getElementById("mnav-proveedores");
+      if (navBtn && !document.querySelector(".mobile-nav-btn.active")) navBtn.classList.add("active");
+      renderMobileProvList();
     }
   }
   updateAlertasBadge();
@@ -1070,6 +1266,9 @@ function hideLoading() {
 
 const uid = () => Math.random().toString(36).slice(2,9);
 const esc = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+// Muestra el texto en minúsculas con la primera letra de cada palabra en mayúscula.
+// Solo afecta la visualización — no cambia el dato guardado. Mantiene gramos como "360gr".
+const titleCase = s => String(s==null?"":s).toLowerCase().replace(/(^|[\s\-\/(.,&])([\p{L}])/gu,(m,sep,ch)=>sep+ch.toUpperCase());
 
 const getRubro = id => DB.rubros.find(r=>r.id===id);
 const getMin = (prod, provProdObj) => {
@@ -1173,7 +1372,7 @@ function renderRubros() {
   const el = document.getElementById("rub-list");
   if (!DB.rubros.length) { el.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:50px;color:#9CA3AF"><div style="font-size:36px;margin-bottom:10px">📂</div><div style="font-weight:600;color:#6B7280">No hay rubros — hacé clic en Nuevo Rubro</div></td></tr>`; return; }
   el.innerHTML = DB.rubros.sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(r=>`<tr class="prod-row">
-      <td class="td-name">${esc(r.nombre)}</td>
+      <td class="td-name">${esc(titleCase(r.nombre))}</td>
       <td class="td-num" style="font-weight:700;color:#374151">${r.minimo} unid.</td>
       <td class="td-act">
         <button class="tbl-btn tbl-btn-e" onclick="openModal('m-rub',()=>resetRubForm('${r.id}'))"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
@@ -1246,7 +1445,7 @@ function renderDB() {
     const minSrc = p.minimoManual>0?"manual":rub?rub.nombre:"defecto";
     const bulto = getBulto(p,null);
     return `<tr class="prod-row">
-      <td class="td-name" title="${esc(p.nombre)}">${esc(p.nombre)}</td>
+      <td class="td-name" title="${esc(titleCase(p.nombre))}">${esc(titleCase(p.nombre))}</td>
       <td class="td-rub">${esc(p.articuloId||"—")}</td>
       <td class="td-rub">${esc(rub?.nombre||"—")}</td>
       <td class="td-num" style="color:#6B7280">${minV} <span style="color:#9CA3AF;font-size:11px">(${esc(minSrc)})</span></td>
@@ -1288,8 +1487,8 @@ function saveProdDB() {
   }
   if (id) {
     const p=DB.productos.find(x=>x.id===id);
-    if(p){p.nombre=nom;p.articuloId=art;p.rubroId=rubId;p.minimoManual=minimoManual;p.bultoCerrado=bultoCerrado;}
-  } else DB.productos.push({id:uid(),nombre:nom,articuloId:art,rubroId:rubId,minimoManual,bultoCerrado,lastStock:0});
+    if(p){ if(nom!==p.nombre) p.lockNombre=true; p.nombre=nom;p.articuloId=art;p.rubroId=rubId;p.minimoManual=minimoManual;p.bultoCerrado=bultoCerrado;}
+  } else DB.productos.push({id:uid(),nombre:nom,articuloId:art,rubroId:rubId,minimoManual,bultoCerrado,lastStock:0,lockNombre:false});
   recalcAllOrders();
   save(); closeModal("m-prod"); renderDB(); if(currentProvId) renderDetail();
 }
@@ -1337,7 +1536,7 @@ function renderProvList() {
     const urgs  = (prov.productos||[]).map(pp=>{ const p=DB.productos.find(x=>x.id===pp.productoId); return getUrg(pp.stock, getMin(p,pp)); });
     const ss=urgs.filter(u=>u==="SIN STOCK").length, cr=urgs.filter(u=>u==="CRÍTICO").length, urg=ss+cr;
     return `<div class="sb-prov-item ${currentProvId===prov.id?"sb-prov-active":""}" onclick="goProvDetail('${prov.id}')" style="background:${color}">
-      <div class="sb-prov-name">${esc(prov.nombre)}</div>
+      <div class="sb-prov-name">${esc(titleCase(prov.nombre))}</div>
       <div class="sb-prov-meta">
         <span>${(prov.productos||[]).length} prod.</span>
         ${urg>0?`<span class="sb-urg-badge">⚠ ${urg} urgente${urg>1?"s":""}</span>`:""}
@@ -1438,7 +1637,7 @@ function renderDetail() {
     const rowCls = urg ? (urgRowClass[urg]||"") : "";
     const minSrc = pp.minimoManual>0?"✏️ manual":p.minimoManual>0?"prod.":rub?rub.nombre.slice(0,10):"def.";
     return `<tr class="prod-row ${rowCls}">
-      <td class="td-name" title="${esc(p.nombre)}"><span class="td-name-inner">${nameSplit(p.nombre)}</span></td>
+      <td class="td-name" title="${esc(titleCase(p.nombre))}"><span class="td-name-inner">${nameSplit(titleCase(p.nombre))}</span></td>
       <td class="td-stock"><input type="number" class="tbl-inp stk-inp-tbl" value="${pp.stock}" min="0" step="any" onchange="updateStock('${pp.productoId}',this.value)" title="Stock actual"></td>
       <td class="td-min-val">${min}<span class="min-src" title="${minSrc}">${minSrc}</span></td>
       <td class="td-min-val">${bulto>1?bulto:"—"}<span class="min-src">bulto</span></td>
@@ -1459,32 +1658,35 @@ function openStkEdit(prodId) {
   const p    = DB.productos.find(x=>x.id===prodId);
   if(!pp||!p) return;
   const rub  = getRubro(p.rubroId);
-  document.getElementById("m-stk-t").textContent = "Editar mínimo";
-  document.getElementById("m-stk-name").textContent = p.nombre;
-  document.getElementById("m-stk-sub").textContent = `Rubro: ${rub?.nombre||"Sin rubro"}`;
-  document.getElementById("f-stk-min").value = pp.minimoManual||"";
-  document.getElementById("f-stk-bulto").value = pp.bultoCerrado||"";
+  document.getElementById("m-stk-t").textContent = "Editar producto";
+  document.getElementById("f-stk-nombre").value = titleCase(p.nombre);
+  document.getElementById("m-stk-sub").textContent = `Rubro: ${titleCase(rub?.nombre||"Sin rubro")} · se aplica a todos los proveedores`;
+  document.getElementById("f-stk-min").value = p.minimoManual>0?p.minimoManual:"";
+  document.getElementById("f-stk-bulto").value = p.bultoCerrado>1?p.bultoCerrado:"";
   document.getElementById("f-stk-pid").value = prodId;
-  const base = p.minimoManual>0?`${p.minimoManual} (manual del producto)`:rub?`${rub.minimo} (rubro "${rub.nombre}")`:"5 (por defecto)";
-  document.getElementById("f-stk-min-hint").textContent = `Si dejás vacío, se usa: ${base}`;
-  document.getElementById("f-stk-bulto-hint").textContent = `Si dejás vacío, se usa: ${p.bultoCerrado>1?p.bultoCerrado:"sin bulto cerrado"}`;
+  const base = rub?`${rub.minimo} (rubro "${titleCase(rub.nombre)}")`:"5 (por defecto)";
+  document.getElementById("f-stk-min-hint").textContent = `Si dejás vacío, se usa el del rubro: ${base}`;
+  document.getElementById("f-stk-bulto-hint").textContent = `Dejá vacío si no se pide por bulto cerrado.`;
   openModal("m-stk");
 }
 
 function saveStkEdit() {
   const prodId = document.getElementById("f-stk-pid").value;
+  const nombre = document.getElementById("f-stk-nombre").value.trim();
   const min    = document.getElementById("f-stk-min").value;
-  const bulto = document.getElementById("f-stk-bulto").value;
-  const prov   = DB.proveedores.find(p=>p.id===currentProvId);
-  const pp     = prov?.productos.find(x=>x.productoId===prodId);
-  if (!pp) return;
-  pp.minimoManual = min===""||Number(min)<=0 ? 0 : Number(min);
-  pp.bultoCerrado = bulto===""||Number(bulto)<=1 ? 0 : Number(bulto);
-  // Recalculate apedir
+  const bulto  = document.getElementById("f-stk-bulto").value;
   const p = DB.productos.find(x=>x.id===prodId);
-  const m = getMin(p,pp);
-  pp.apedir = calcAPedir(p, pp, pp.stock);
-  save(); closeModal("m-stk"); renderDetail();
+  if (!p) return;
+  // El cambio se aplica al PRODUCTO global (toda la base de datos).
+  if (nombre && nombre !== p.nombre) { p.nombre = nombre; p.lockNombre = true; }
+  p.minimoManual = min===""||Number(min)<=0 ? 0 : Number(min);
+  p.bultoCerrado = bulto===""||Number(bulto)<=1 ? 0 : Number(bulto);
+  // Quitar overrides por proveedor para que el valor global aplique en todos.
+  DB.proveedores.forEach(pv=>{
+    const x = (pv.productos||[]).find(pp=>pp.productoId===prodId);
+    if (x) { x.minimoManual = 0; x.bultoCerrado = 0; x.apedir = calcAPedir(p, x, x.stock); }
+  });
+  save(); closeModal("m-stk"); renderDetail(); renderDB();
 }
 
 function updateStock(prodId, val) {
@@ -1545,8 +1747,8 @@ function renderSelList() {
     return `<div class="prod-sel-item" onclick="toggleSel('${p.id}')">
       <div class="chk ${on?"on":""}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" style="display:${on?"block":"none"}"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13px;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.nombre)}</div>
-        <div style="font-size:11px;color:#9CA3AF;margin-top:1px">${esc(rub?.nombre||"Sin rubro")}</div>
+        <div style="font-weight:600;font-size:13px;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(titleCase(p.nombre))}</div>
+        <div style="font-size:11px;color:#9CA3AF;margin-top:1px">${esc(titleCase(rub?.nombre||"Sin rubro"))}</div>
       </div>
     </div>`;
   }).join("");
@@ -1677,7 +1879,7 @@ function renderWA() {
       <span style="font-size:12px;color:#9CA3AF">${waItems.length} producto${waItems.length>1?"s":""}</span>
     </div>
     ${waItems.map(it=>`<div class="wa-item">
-      <div class="wa-name">${esc(it.nombre)}</div>
+      <div class="wa-name">${esc(titleCase(it.nombre))}</div>
       <input type="number" class="wa-qty" value="${Math.round(it.qty)}" min="0" onchange="waItems.find(x=>x.productoId==='${it.productoId}').qty=Math.round(Math.max(0,Number(this.value)))">
       <button class="wa-del" onclick="waItems=waItems.filter(x=>x.productoId!=='${it.productoId}');renderWA()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#991B1B" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
     </div>`).join("")}`;
@@ -1719,13 +1921,11 @@ function buildWAText() {
   const header = `🛒 *Pedido - ${prov?.nombre}*\n📅 ${date}\n\n`;
   const items = waItems.filter(x=>x.qty>0).sort((a,b)=>a.nombre.localeCompare(b.nombre));
   if (!items.length) return "";
-  const totalUnid = items.reduce((s,x)=>s+x.qty,0);
-  const footer = `\n_Total: ${totalUnid} unidades_`;
 
   if (!waAgruparRubros) {
     let txt = header;
-    items.forEach(it=>{ txt+=`- *${Math.round(it.qty)}* ${it.nombre}\n`; });
-    return (txt + footer).trim();
+    items.forEach(it=>{ txt+=`- *${Math.round(it.qty)}* ${titleCase(it.nombre)}\n`; });
+    return txt.trim();
   }
 
   const byRubro = new Map();
@@ -1743,10 +1943,10 @@ function buildWAText() {
   grupos.forEach(([,g])=>{
     const emoji = rubroEmoji(g.nombre);
     txt += `━━━━━━━━━━━━━━\n${emoji} *${g.nombre.toUpperCase()}*\n━━━━━━━━━━━━━━\n`;
-    g.items.forEach(it=>{ txt+=`- *${Math.round(it.qty)}* ${it.nombre}\n`; });
+    g.items.forEach(it=>{ txt+=`- *${Math.round(it.qty)}* ${titleCase(it.nombre)}\n`; });
     txt += "\n";
   });
-  return (txt + footer).trim();
+  return txt.trim();
 }
 
 function sendWA() {
@@ -1766,6 +1966,9 @@ function getWaFiltroFromDOM() {
 }
 
 function ensureWaItems() {
+  // Si ya estamos en la lista final (hay inputs de cantidad), respetar las
+  // ediciones manuales del usuario (cantidades cambiadas y productos borrados).
+  if (document.querySelector("#wa-list .wa-qty")) return;
   const filtroUrg = getWaFiltroFromDOM();
   waFiltroMin = Math.max(0, Number(document.getElementById("wa-min-inp")?.value)||waFiltroMin);
   waItems = buildWaItems(filtroUrg, waFiltroMin);
@@ -1920,7 +2123,7 @@ function confirmImport() {
       const existing=findProdByImport(it);
       if(existing){
         if(it.articuloId) existing.articuloId=it.articuloId; // siempre actualizar articuloId si viene en el Excel
-        existing.nombre=it.nombre;
+        if(!existing.lockNombre) existing.nombre=it.nombre; // no pisar nombres editados manualmente
         if(rub) existing.rubroId=rub.id;
         existing.lastStock=it.stock;
         // Actualizar stock en TODOS los proveedores que tengan este producto
@@ -1956,7 +2159,7 @@ function confirmImport() {
       } else {
         // Producto existente: actualizar datos en DB
         if(it.articuloId && !prod.articuloId) prod.articuloId=it.articuloId;
-        prod.nombre=it.nombre;
+        if(!prod.lockNombre) prod.nombre=it.nombre; // no pisar nombres editados manualmente
         if(rub) prod.rubroId=rub.id;
         prod.lastStock=it.stock;
       }
@@ -2026,12 +2229,12 @@ function goProvDetail(provId) {
   const prov = DB.proveedores.find(p=>p.id===provId);
   const idx  = DB.proveedores.indexOf(prov);
   const color = PCOLORS[idx%PCOLORS.length];
-  if (document.getElementById("pd-title")) document.getElementById("pd-title").textContent = prov?.nombre||"";
+  if (document.getElementById("pd-title")) document.getElementById("pd-title").textContent = titleCase(prov?.nombre||"");
   if (document.getElementById("pd-contact")) document.getElementById("pd-contact").textContent = prov?.contacto||"";
   const icon = document.getElementById("pd-hdr-icon");
   if (icon) { icon.style.background=color+"22"; const svg=icon.querySelector("svg"); if(svg) svg.style.stroke=color; }
   const bc = document.getElementById("topbar-breadcrumb");
-  if (bc) bc.textContent = "Proveedores › " + (prov?.nombre||"");
+  if (bc) bc.textContent = "Proveedores › " + titleCase(prov?.nombre||"");
   const ps = document.getElementById("pd-search"); if(ps) ps.value="";
   const pso= document.getElementById("pd-sort");   if(pso) pso.value="urgencia";
   renderDetail();
@@ -2105,7 +2308,7 @@ function renderMobileProvList() {
     const urg = ss+cr;
     return `<div style="background:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 2px 8px rgba(28,46,62,.08);cursor:pointer;border-left:5px solid ${color}" onclick="goProvDetail('${prov.id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-        <div style="font-weight:800;font-size:15px;color:var(--text)">${esc(prov.nombre)}</div>
+        <div style="font-weight:800;font-size:15px;color:var(--text)">${esc(titleCase(prov.nombre))}</div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
           <span style="font-size:12px;color:var(--text-s);font-weight:600">${(prov.productos||[]).length} prod.</span>
           ${urg>0?`<span style="background:#E8BABA;color:#6E1515;border-radius:12px;padding:2px 9px;font-size:11px;font-weight:800">⚠ ${urg} urgente${urg>1?"s":""}</span>`:""}
@@ -2269,8 +2472,8 @@ function renderAlertas() {
       return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border-l)">
         <div style="width:5px;height:5px;border-radius:50%;background:${m?.dot||"#ccc"};flex-shrink:0"></div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.prod.nombre)}</div>
-          <div style="font-size:11px;color:var(--text-s);margin-top:1px">${esc(rub?.nombre||"Sin rubro")} · mín: ${it.min}${bulto>1?` · bulto: ${bulto}`:""}</div>
+          <div style="font-weight:700;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(titleCase(it.prod.nombre))}</div>
+          <div style="font-size:11px;color:var(--text-s);margin-top:1px">${esc(titleCase(rub?.nombre||"Sin rubro"))} · mín: ${it.min}${bulto>1?` · bulto: ${bulto}`:""}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
           <span style="background:${m?.bg||"#eee"};color:${m?.text||"#333"};border-radius:12px;padding:2px 9px;font-size:11px;font-weight:800">${it.urg}</span>
@@ -2283,7 +2486,7 @@ function renderAlertas() {
       <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border-l);background:var(--bg);cursor:pointer" onclick="goProvDetail('${g.prov.id}')">
         <div style="width:4px;height:32px;border-radius:2px;background:${g.color};flex-shrink:0"></div>
         <div style="flex:1">
-          <div style="font-weight:800;font-size:14px;color:var(--text)">${esc(g.prov.nombre)}</div>
+          <div style="font-weight:800;font-size:14px;color:var(--text)">${esc(titleCase(g.prov.nombre))}</div>
           <div style="font-size:12px;color:var(--text-s)">${g.items.length} producto${g.items.length>1?"s":""} con alerta${urgentes>0?` · ${urgentes} urgente${urgentes>1?"s":""}`:""}</div>
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-s)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
