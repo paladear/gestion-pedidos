@@ -66,6 +66,9 @@ button,input,select,textarea{font-family:'Montserrat',sans-serif}
 .tb-tool{background:rgba(255,255,255,.14);border:none;border-radius:9px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;transition:background .15s,opacity .15s;flex-shrink:0}
 .tb-tool:hover{background:rgba(255,255,255,.26)}
 .tb-tool:disabled{opacity:.32;cursor:default;background:rgba(255,255,255,.08)}
+.tb-excel{width:auto;padding:0 14px;gap:7px;background:#fff;color:#27475F;font-weight:800;font-size:13px;letter-spacing:-.2px}
+.tb-excel:hover{background:#EAF0F5}
+.tb-excel-txt{white-space:nowrap}
 
 /* Sidebar */
 .sidebar{background:var(--sidebar-d);overflow-y:auto;display:flex;flex-direction:column;border-right:1px solid rgba(0,0,0,.15);transition:all .25s ease;overflow-x:visible}
@@ -260,6 +263,8 @@ td{padding:9px 12px;vertical-align:middle}
   .topbar{padding:0 14px;grid-column:1}
   .topbar-logo{width:auto;font-size:15px}
   .topbar-title{display:none}
+  .tb-excel{width:34px;padding:0}
+  .tb-excel-txt{display:none}
 
   /* Sidebar → bottom nav en mobile */
   .sidebar{
@@ -539,6 +544,10 @@ td{padding:9px 12px;vertical-align:middle}
   </div>
   <span id="topbar-breadcrumb" class="topbar-title"></span>
   <div class="topbar-tools">
+    <button class="tb-tool tb-excel" onclick="openImportDB()" title="Cargar productos desde Excel (global)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 12l-4-4m0 0l-4 4m4-4v12"/></svg>
+      <span class="tb-excel-txt">Cargar Excel</span>
+    </button>
     <button id="btn-undo" class="tb-tool" onclick="undo()" title="Deshacer" disabled>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14L4 9l5-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M4 9h11a5 5 0 015 5v0a5 5 0 01-5 5H9"/></svg>
     </button>
@@ -628,7 +637,6 @@ td{padding:9px 12px;vertical-align:middle}
         <div id="pd-contact" class="page-hdr-sub"></div>
       </div>
       <div class="page-hdr-actions" style="flex-wrap:nowrap;flex-shrink:0;width:auto">
-        <button class="btn btn-s" onclick="openImport()" title="Importar Excel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 12l-4-4m0 0l-4 4m4-4v12"/></svg><span class="btn-txt">Excel</span></button>
         <button class="btn btn-s" onclick="openSelectProds()" title="Agregar productos"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg><span class="btn-txt">Agregar</span></button>
         <button class="btn btn-w" onclick="openWA()" title="Generar pedido WhatsApp"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="btn-txt">WhatsApp</span></button>
         <button class="btn btn-s" onclick="editProv()" title="Editar proveedor" style="padding:8px 10px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
