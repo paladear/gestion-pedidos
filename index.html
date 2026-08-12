@@ -160,6 +160,8 @@ thead th:hover{background:var(--sidebar-l)}
 td{padding:9px 12px;vertical-align:middle}
 /* Columna nombre: fondo blanco, ancho fijo para no acaparar todo */
 .td-name{font-weight:700;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:38%;background:#fff;padding-left:14px;padding-right:14px}
+.td-name-edit{cursor:pointer;transition:color .15s}
+.td-name-edit:hover{color:var(--sidebar);text-decoration:underline;text-decoration-color:rgba(84,118,146,.4);text-underline-offset:2px}
 .td-name-inner{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .td-rub-inline{display:none;font-size:11px;color:var(--text-s);font-weight:600;margin-top:2px}
 .td-stock{width:90px;text-align:center}
@@ -666,7 +668,6 @@ td{padding:9px 12px;vertical-align:middle}
       <div class="page-hdr-actions">
         <button class="btn btn-s" onclick="openImportDB()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 12l-4-4m0 0l-4 4m4-4v12"/></svg>Importar Excel</button>
         <button class="btn btn-d" onclick="confirmClearProductsDB()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E1515" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6"/></svg>Vaciar base</button>
-            <button class="btn btn-s" onclick="unirDuplicados()" title="Unir productos duplicados">🔗 Unir duplicados</button>
         <button class="btn btn-p" onclick="openModal('m-prod',()=>resetProdForm(null))"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>Nuevo producto</button>
       </div>
     </div>
@@ -1503,37 +1504,6 @@ function confirmClearProductsDB() {
   });
 }
 
-// Une productos duplicados (mismo nombre). Conserva el que tiene articuloId
-// y reasigna las referencias de los proveedores al conservado, para NO perder
-// las listas ya cargadas. Luego elimina los duplicados.
-function unirDuplicados() {
-  const norm = s => String(s||"").trim().toLowerCase().replace(/\s+/g," ");
-  const grupos = new Map();
-  DB.productos.forEach(p => {
-    const k = norm(p.nombre);
-    if(!grupos.has(k)) grupos.set(k, []);
-    grupos.get(k).push(p);
-  });
-  let unidos = 0;
-  grupos.forEach(grupo => {
-    if(grupo.length < 2) return;
-    const canon = grupo.find(p => String(p.articuloId||"").trim()) || grupo[0];
-    grupo.filter(p => p.id !== canon.id).forEach(dup => {
-      DB.proveedores.forEach(pv => {
-        const idxDup = (pv.productos||[]).findIndex(x => x.productoId === dup.id);
-        if(idxDup < 0) return;
-        if(pv.productos.some(x => x.productoId === canon.id)) pv.productos.splice(idxDup, 1);
-        else pv.productos[idxDup].productoId = canon.id;
-      });
-      DB.productos = DB.productos.filter(p => p.id !== dup.id);
-      unidos++;
-    });
-  });
-  if(unidos === 0){ showToast("✅ No hay duplicados para unir"); return; }
-  save(); renderDB(); renderProvList(); if(currentProvId) renderDetail();
-  showToast(`🔗 ${unidos} duplicado${unidos>1?"s unidos":" unido"} — listas conservadas`);
-}
-
 function recalcAllOrders() {
   DB.proveedores.forEach(pv=>{
     (pv.productos||[]).forEach(pp=>{
@@ -1669,13 +1639,13 @@ function renderDetail() {
     const rowCls = urg ? (urgRowClass[urg]||"") : "";
     const minSrc = pp.minimoManual>0?"✏️ manual":p.minimoManual>0?"prod.":rub?rub.nombre.slice(0,10):"def.";
     return `<tr class="prod-row ${rowCls}">
-      <td class="td-name" title="${esc(titleCase(p.nombre))}"><span class="td-name-inner">${nameSplit(titleCase(p.nombre))}</span></td>
+      <td class="td-name td-name-edit" title="${esc(titleCase(p.nombre))} — clic para editar" onclick="nameClickEdit('${pp.productoId}')"><span class="td-name-inner">${nameSplit(titleCase(p.nombre))}</span></td>
       <td class="td-stock"><input type="number" class="tbl-inp stk-inp-tbl" value="${pp.stock}" min="0" step="any" onchange="updateStock('${pp.productoId}',this.value)" title="Stock actual"></td>
       <td class="td-min-val">${min}<span class="min-src" title="${minSrc}">${minSrc}</span></td>
       <td class="td-min-val">${bulto>1?bulto:"—"}<span class="min-src">bulto</span></td>
       <td class="td-apedir"><input type="number" class="tbl-inp apedir-inp-tbl" value="${Math.round(pp.apedir||0)}" min="0" onchange="updateApedir('${pp.productoId}',this.value)" title="A pedir"></td>
       <td class="td-act">
-        <button class="tbl-btn tbl-btn-e" onclick="openStkEdit('${pp.productoId}')" title="Editar mínimo"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="tbl-btn tbl-btn-e" onclick="openStkEdit('${pp.productoId}')" title="Editar producto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         <button class="tbl-btn tbl-btn-d" onclick="delProdFromProv('${pp.productoId}')" title="Quitar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
       </td>
     </tr>`;
@@ -1683,6 +1653,11 @@ function renderDetail() {
 }
 
 function toggleUrgF(u) { window._urgFilter = window._urgFilter===u?"":u; renderDetail(); }
+
+// Clic en el nombre: en desktop abre el editor global; en mobile deja el tap-para-expandir.
+function nameClickEdit(prodId) {
+  if (window.matchMedia("(min-width:769px)").matches) openStkEdit(prodId);
+}
 
 function openStkEdit(prodId) {
   const prov = DB.proveedores.find(p=>p.id===currentProvId);
@@ -1820,7 +1795,8 @@ function buildWaItems(filtroUrg, filtroMin) {
   const prov = DB.proveedores.find(p=>p.id===currentProvId);
   return (prov?.productos||[])
     .map(pp=>{ const p=DB.productos.find(x=>x.id===pp.productoId); const min=getMin(p,pp); const qty=Math.round(Number(pp.apedir)||0); const urg=getUrg(pp.stock,min); const rub=getRubro(p?.rubroId); return {productoId:pp.productoId,nombre:p?.nombre||"?",rubroId:p?.rubroId||"",rubroNombre:rub?.nombre||"Sin rubro",qty,urg,urgOrder:URG[urg]?.order??99}; })
-    .filter(it=>it.qty>=filtroMin && filtroUrg.includes(it.urg))
+    // Nunca incluir productos OK (verdes): evita pedir de más por error.
+    .filter(it=>it.qty>=filtroMin && filtroUrg.includes(it.urg) && it.urg!=="OK")
     .sort((a,b)=>a.nombre.localeCompare(b.nombre));
 }
 
@@ -1837,7 +1813,6 @@ function renderWAFiltro() {
     ["SIN STOCK","#FEE2E2","#991B1B"],
     ["CRÍTICO",  "#FFEDD5","#9A3412"],
     ["BAJO",     "#FEF9C3","#854D0E"],
-    ["OK",       "#DCFCE7","#166534"],
   ];
   el.innerHTML = `
     <div style="margin-bottom:14px">
@@ -1862,9 +1837,9 @@ function renderWAFiltro() {
       <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Formato del mensaje</div>
       <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:#F3F4F6;cursor:pointer">
         <div style="position:relative;width:38px;height:22px;flex-shrink:0">
-          <input type="checkbox" id="wa-rubros-toggle" ${waAgruparRubros?"checked":""} onchange="waAgruparRubros=this.checked;document.getElementById('wa-rubros-lbl').textContent=this.checked?'Agrupado por rubro':'Lista simple'" style="opacity:0;width:100%;height:100%;position:absolute;cursor:pointer;z-index:1;margin:0">
+          <input type="checkbox" id="wa-rubros-toggle" ${waAgruparRubros?"checked":""} onchange="setWaRubros(this.checked)" style="opacity:0;width:100%;height:100%;position:absolute;cursor:pointer;z-index:1;margin:0">
           <div id="wa-toggle-track" style="width:38px;height:22px;border-radius:11px;background:${waAgruparRubros?"#4A8C54":"#CBD5E1"};transition:background .2s;pointer-events:none">
-            <div style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${waAgruparRubros?"18px":"2px"};transition:left .2s"></div>
+            <div id="wa-toggle-knob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${waAgruparRubros?"18px":"2px"};transition:left .2s"></div>
           </div>
         </div>
         <div>
@@ -1884,6 +1859,17 @@ function toggleWaUrg(u, checked) {
   if (checked) { if(!waFiltroUrg.includes(u)) waFiltroUrg.push(u); }
   else waFiltroUrg = waFiltroUrg.filter(x=>x!==u);
   updateWAPreviewCount();
+}
+
+// Toggle "Agrupar por rubro": mueve la perilla y cambia el color al instante.
+function setWaRubros(checked) {
+  waAgruparRubros = checked;
+  const lbl   = document.getElementById("wa-rubros-lbl");
+  const track = document.getElementById("wa-toggle-track");
+  const knob  = document.getElementById("wa-toggle-knob");
+  if (lbl)   lbl.textContent   = checked ? "Agrupado por rubro" : "Lista simple";
+  if (track) track.style.background = checked ? "#4A8C54" : "#CBD5E1";
+  if (knob)  knob.style.left   = checked ? "18px" : "2px";
 }
 
 function updateWAPreviewCount() {
@@ -2068,7 +2054,6 @@ function showImpErr(msg) {
 }
 
 function findCol(hdr,...opts) { for(const o of opts){const i=hdr.findIndex(h=>String(h).toLowerCase().includes(o));if(i>=0)return i;} return -1; }
-function parseNum(v){ if(v===undefined||v===null||String(v).trim()==="")return NaN; const s=String(v).trim().replace(/\s/g,""); if(/^-?\d{1,3}(\.\d{3})*(,\d+)?$/.test(s)) return Number(s.replace(/\./g,"").replace(",",".")); if(/^-?\d+(,\d+)?$/.test(s)) return Number(s.replace(",",".")); return Number(s); }
 
 function processFile(file) {
   const reader=new FileReader();
@@ -2077,9 +2062,8 @@ function processFile(file) {
     try {
       let rows;
       if(file.name.toLowerCase().endsWith(".csv")){
-        let text; try{text=new TextDecoder("utf-8",{fatal:true}).decode(e.target.result);}catch(_err){text=new TextDecoder("windows-1252").decode(e.target.result);}
-        const sep=text.includes(";")?";":",";
-        rows=text.trim().split(/\r?\n/).map(l=>l.split(sep).map(c=>c.replace(/^"|"$/g,"").trim()));
+        const text=e.target.result,sep=text.includes(";")?";":",";
+        rows=text.trim().split("\n").map(l=>l.split(sep).map(c=>c.replace(/^"|"$/g,"").trim()));
       } else {
         const wb=XLSX.read(e.target.result,{type:"binary"});
         const ws=wb.Sheets[wb.SheetNames[0]];
@@ -2097,14 +2081,14 @@ function processFile(file) {
         articuloId:ai>=0&&r[ai]?String(r[ai]).trim():"",
         nombre:String(r[ci]).trim(),
         rubroNombre:ri>=0&&r[ri]?String(r[ri]).trim():"",
-        stock:si>=0&&!isNaN(parseNum(r[si]))?Math.max(0,parseNum(r[si])):0,
+        stock:si>=0&&!isNaN(Number(r[si]))?Math.max(0,Number(r[si])):0,
       }));
       if(!items.length) return showImpErr("Sin datos válidos");
       importPreview=items;
       renderImportPreview();
     } catch(err){ showImpErr("Error al procesar: "+err.message); }
   };
-  if(file.name.toLowerCase().endsWith(".csv")) reader.readAsArrayBuffer(file);
+  if(file.name.toLowerCase().endsWith(".csv")) reader.readAsText(file,"UTF-8");
   else reader.readAsBinaryString(file);
 }
 
