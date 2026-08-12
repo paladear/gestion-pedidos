@@ -955,6 +955,7 @@ const save = () => {
   normalizeDB();  // asegurar arrays antes de guardar
   saveLocalBackup();  // backup local SIEMPRE
   recordHistory();    // historial para deshacer/rehacer (se ignora durante undo/redo)
+  scheduleAutoBackupSoon();  // respaldo automático tras editar (respeta el límite de 30 min)
   const sid = Date.now()+"_"+Math.random().toString(36).slice(2,6);
   _mySaveId = sid;
   DB._sid = sid;
@@ -1032,7 +1033,8 @@ function saveBackupNow() {
       // Conservar solo los 30 más recientes
       backupsRef.once("value").then(s => {
         const all = s.val() || {};
-        const sorted = Object.keys(all).map(k=>({key:k,ts:all[k].ts||0})).sort((a,b)=>b.ts-a.ts);
+        // Rotación SOLO de manuales (los automáticos rotan por su cuenta).
+        const sorted = Object.keys(all).filter(k=>!(all[k]&&all[k].auto)).map(k=>({key:k,ts:all[k].ts||0})).sort((a,b)=>b.ts-a.ts);
         sorted.slice(30).forEach(o => backupsRef.child(o.key).remove());
       });
       showToast("💾 Backup guardado");
@@ -1099,7 +1101,7 @@ function renderBackupsList() {
     nameEl.textContent = b.name || "Backup";
     const metaEl = document.createElement("div");
     metaEl.style.cssText = "font-size:11px;color:#9CA3AF;margin-top:1px";
-    metaEl.textContent = `${when} · ${np} prov · ${nd} prod`;
+    metaEl.textContent = `${b.auto ? "Automático · " : ""}${when} · ${np} prov · ${nd} prod`;
     info.append(nameEl, metaEl);
 
     const restoreBtn = document.createElement("button");
@@ -1117,6 +1119,57 @@ function renderBackupsList() {
     row.append(info, restoreBtn, delBtn);
     el.appendChild(row);
   });
+}
+
+// ══ BACKUPS AUTOMÁTICOS ═══════════════════════════════════════════════════════
+// Se generan solos (al abrir, cada 30 min, y tras editar) para no volver a perder datos.
+const AUTO_BACKUP_GAP_MS = 30 * 60 * 1000; // como máximo 1 automático cada 30 minutos
+const AUTO_BACKUP_KEEP    = 10;            // conservar los últimos 10 automáticos (aparte de los manuales)
+
+// ¿Vale la pena respaldar el estado actual? Evita guardar una base vacía o corrupta.
+function _dbValeBackup() {
+  const prods = Array.isArray(DB.productos) ? DB.productos.length : 0;
+  const provProds = (DB.proveedores||[]).reduce((n,p)=>n+((p.productos||[]).length),0);
+  return prods > 0 && provProds > 0;
+}
+
+function autoBackup(force) {
+  if (!_fbLoaded) return;
+  if (!_dbValeBackup()) return;                 // no respaldar basura
+  const autos = _backups.filter(b => b.auto).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  const last  = autos[0];
+  const now   = Date.now();
+  if (!force && last && (now - (last.ts||0)) < AUTO_BACKUP_GAP_MS) return;
+  const snap = _snapshotDB();
+  if (last && last.data && JSON.stringify(last.data) === JSON.stringify(snap)) return; // sin cambios
+  const when = new Date(now).toLocaleString("es-AR", {day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+  const ref  = backupsRef.push();
+  ref.set({ name: "Auto " + when, ts: now, auto: true, data: snap })
+    .then(() => {
+      // Rotación SOLO de automáticos — nunca borra los manuales.
+      backupsRef.once("value").then(s => {
+        const all = s.val() || {};
+        const autoKeys = Object.keys(all).filter(k => all[k] && all[k].auto)
+          .map(k => ({key:k, ts:all[k].ts||0})).sort((a,b)=>b.ts-a.ts);
+        autoKeys.slice(AUTO_BACKUP_KEEP).forEach(o => backupsRef.child(o.key).remove());
+      });
+    })
+    .catch(()=>{});
+}
+
+let _autoBackupArmed = false;
+function armAutoBackup() {
+  if (_autoBackupArmed) return;
+  _autoBackupArmed = true;
+  setTimeout(() => autoBackup(false), 6000);                    // primer respaldo de la sesión
+  setInterval(() => autoBackup(false), AUTO_BACKUP_GAP_MS);     // periódico mientras esté abierta
+}
+
+let _autoBkTimer = null;
+function scheduleAutoBackupSoon() {                              // tras editar, respaldar (respeta el gap)
+  if (!_fbLoaded) return;
+  clearTimeout(_autoBkTimer);
+  _autoBkTimer = setTimeout(() => autoBackup(false), 60000);
 }
 
 // ── FLAG: operación local en curso ──────────────────────────────────────────
@@ -1170,7 +1223,7 @@ fbRef.on("value", (snap) => {
     _localOpInProgress = false;
     DB = data; normalizeDB();
     if (!_history.length) recordHistory(); // sembrar el estado inicial para deshacer
-    if (!_fbLoaded) { _fbLoaded = true; hideLoading(); }
+    if (!_fbLoaded) { _fbLoaded = true; hideLoading(); armAutoBackup(); }
     renderCurrentView();   // siempre re-renderizar al confirmar guardado
     if (_remoteUpdatePending) { _remoteUpdatePending = false; }
     return;
@@ -1193,7 +1246,7 @@ fbRef.on("value", (snap) => {
   DB = data; normalizeDB();
   saveLocalBackup(); // siempre actualizar el backup cuando llegan datos de Firebase
   if (!_history.length) recordHistory(); // sembrar el estado inicial para deshacer
-  if (!_fbLoaded) { _fbLoaded = true; hideLoading(); renderCurrentView(); return; }
+  if (!_fbLoaded) { _fbLoaded = true; hideLoading(); renderCurrentView(); armAutoBackup(); return; }
 
   const modalOpen  = document.querySelector(".ov.open, .conf-ov.open");
   const inputFocus = ["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName);
